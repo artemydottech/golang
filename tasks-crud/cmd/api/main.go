@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	_ "tasks-crud/docs"
@@ -15,173 +14,260 @@ import (
 
 	"tasks-crud/internal/config"
 	"tasks-crud/internal/domain"
+	"tasks-crud/internal/handler"
+	"tasks-crud/internal/middleware"
 	"tasks-crud/internal/repository"
 	"tasks-crud/internal/service"
 )
 
-type TaskHandler struct {
-    service *service.TaskService
-}
+// @title artemydottech API with JWT Authentication
+// @version 1.0.0
+// @description REST API for task management with JWT authentication
 
-func NewTaskHandler(service *service.TaskService) *TaskHandler {
-    return &TaskHandler{service: service}
-}
+// @contact.name Artemij Zverev
+// @contact.url https://github.com/Taneellaa
+// @contact.email artemiy.zverev@bk.ru
 
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
 
-func (h *TaskHandler) GetAllTasks(w http.ResponseWriter, r *http.Request) {
-    tasks, err := h.service.GetAllTasks()
-    if err != nil {
-        sendError(w, http.StatusInternalServerError, "Failed to get tasks", err)
-        return
-    }
-    sendJSON(w, http.StatusOK, tasks)
-}
+// @host localhost:8080
+// @BasePath /api/v1
 
-func (h *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    id, err := strconv.Atoi(vars["id"])
-    if err != nil {
-        sendError(w, http.StatusBadRequest, "Invalid task ID", err)
-        return
-    }
-    
-    task, err := h.service.GetTaskByID(id)
-    if err != nil {
-        sendError(w, http.StatusNotFound, "Task not found", err)
-        return
-    }
-    sendJSON(w, http.StatusOK, task)
-}
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @type apiKey
+// @description JWT Authorization header. Введите ТОЛЬКО токен.
 
-func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-    var req domain.CreateTaskRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        sendError(w, http.StatusBadRequest, "Invalid JSON", err)
-        return
-    }
-    defer r.Body.Close()
-    
-    task, err := h.service.CreateTask(req)
-    if err != nil {
-        sendError(w, http.StatusBadRequest, "Failed to create task", err)
-        return
-    }
-    
-    sendJSON(w, http.StatusCreated, task)
-}
-
-func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    id, err := strconv.Atoi(vars["id"])
-    if err != nil {
-        sendError(w, http.StatusBadRequest, "Invalid task ID", err)
-        return
-    }
-    
-    var req domain.UpdateTaskRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        sendError(w, http.StatusBadRequest, "Invalid JSON", err)
-        return
-    }
-    defer r.Body.Close()
-    
-    task, err := h.service.UpdateTask(id, req)
-    if err != nil {
-        sendError(w, http.StatusBadRequest, "Failed to update task", err)
-        return
-    }
-    
-    sendJSON(w, http.StatusOK, task)
-}
-
-func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    id, err := strconv.Atoi(vars["id"])
-    if err != nil {
-        sendError(w, http.StatusBadRequest, "Invalid task ID", err)
-        return
-    }
-    
-    if err := h.service.DeleteTask(id); err != nil {
-        sendError(w, http.StatusNotFound, "Task not found", err)
-        return
-    }
-    w.WriteHeader(http.StatusNoContent)
-}
+// @security BearerAuth
+// HealthCheck проверка работоспособности сервиса
+// @Summary Health check
+// @Description Проверка работоспособности сервиса
+// @Tags health
+// @Produce json
+// @Success 200 {object} HealthResponse
+// @Router /health [get]
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{
-        "status":    "ok",
-        "timestamp": time.Now().Format(time.RFC3339),
-        "service":   "todo-api",
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":    "ok",
+		"timestamp": time.Now().Format(time.RFC3339),
+		"service":   "todo-api",
+		"version":   "1.0.0",
+		"auth":      "jwt-enabled",
+	})
 }
 
-func sendJSON(w http.ResponseWriter, statusCode int, data interface{}) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(statusCode)
-    json.NewEncoder(w).Encode(data)
+// HealthResponse структура ответа health check
+type HealthResponse struct {
+	Status    string `json:"status"`
+	Timestamp string `json:"timestamp"`
+	Service   string `json:"service"`
+	Version   string `json:"version"`
+	Auth      string `json:"auth"`
 }
 
+// sendError отправка ошибки в JSON формате
 func sendError(w http.ResponseWriter, statusCode int, message string, err error) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(statusCode)
-    json.NewEncoder(w).Encode(domain.ErrorResponse{
-        Error:   message,
-        Details: err.Error(),
-    })
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	errorResponse := domain.ErrorResponse{
+		Error:  message,
+		Status: statusCode,
+		Time:   time.Now().Format(time.RFC3339),
+	}
+
+	if err != nil {
+		errorResponse.Details = err.Error()
+	}
+
+	json.NewEncoder(w).Encode(errorResponse)
+}
+
+// NotFoundHandler обработчик для 404 ошибок
+func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
+	sendError(w, http.StatusNotFound, "Endpoint not found", nil)
+}
+
+// MethodNotAllowedHandler обработчик для 405 ошибок
+func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request) {
+	sendError(w, http.StatusMethodNotAllowed, "Method not allowed", nil)
+}
+
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// RequestLogger middleware для логирования запросов
+func RequestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Создаем обертку для ResponseWriter чтобы перехватить статус код
+		rw := &responseWriter{w, http.StatusOK}
+
+		next.ServeHTTP(rw, r)
+
+		duration := time.Since(start)
+
+		log.Printf("[%s] %s %s %d %v",
+			r.Method,
+			r.URL.Path,
+			r.RemoteAddr,
+			rw.statusCode,
+			duration,
+		)
+	})
+}
+
+// responseWriter кастомный ResponseWriter для перехвата статус кода
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 func main() {
-    fmt.Println("🚀 Запуск Todo API со Swagger...")
-    
-    cfg := config.Load()
-    fmt.Printf("📋 Конфигурация:\n   Порт: %d\n", cfg.Port)
-    
-    taskRepo := repository.NewInMemoryTaskRepository()
-    taskService := service.NewTaskService(taskRepo)
-    taskHandler := NewTaskHandler(taskService)
-    
-    router := mux.NewRouter()
-    
-    api := router.PathPrefix("/api/v1").Subrouter()
-    api.HandleFunc("/tasks", taskHandler.GetAllTasks).Methods("GET")
-    api.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
-    api.HandleFunc("/tasks/{id}", taskHandler.GetTaskByID).Methods("GET")
-    api.HandleFunc("/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
-    api.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
-    
-    router.HandleFunc("/health", HealthCheck).Methods("GET")
-    
-    router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-        httpSwagger.URL("/swagger/doc.json"),
-        httpSwagger.DeepLinking(true),
-        httpSwagger.DocExpansion("list"),
-        httpSwagger.DomID("swagger-ui"),
-    ))
-    
-    router.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
-        http.Redirect(w, r, "/swagger/index.html", http.StatusMovedPermanently)
-    })
-    
-    router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        http.Redirect(w, r, "/swagger/index.html", http.StatusSeeOther)
-    })
-    
-    addr := fmt.Sprintf(":%d", cfg.Port)
-    server := &http.Server{
-        Addr:         addr,
-        Handler:      router,
-        ReadTimeout:  15 * time.Second,
-        WriteTimeout: 15 * time.Second,
-        IdleTimeout:  60 * time.Second,
-    }
-    
-    fmt.Printf("🌐 Сервер запущен на http://localhost:%d\n", cfg.Port)
-    fmt.Printf("📚 Swagger UI: http://localhost:%d/swagger/index.html\n", cfg.Port)
-    fmt.Printf("📖 API документация: http://localhost:%d/docs\n", cfg.Port)
-    fmt.Println("🛑 Для остановки нажмите Ctrl+C")
-    
-    log.Fatal(server.ListenAndServe())
+	fmt.Println("🚀 Запуск Todo API с JWT аутентификацией...")
+	fmt.Println("=============================================")
+
+	cfg := config.Load()
+
+	fmt.Printf("📋 Конфигурация:\n")
+	fmt.Printf("Порт: %d\n", cfg.Port)
+	fmt.Printf("Окружение: %s\n", cfg.Env)
+	fmt.Printf("JWT Expiry: %v\n", cfg.JWTExpiry)
+	fmt.Printf("Bcrypt Cost: %d\n", cfg.BcryptCost)
+
+	if cfg.Env == "development" && cfg.JWTSecret == "your-secret-key-change-in-production" {
+		fmt.Println("⚠️ВНИМАНИЕ: Используется дефолтный JWT секрет. В продакшене установите JWT_SECRET!")
+	}
+
+	fmt.Println("=============================================")
+
+	fmt.Println("📦 Инициализация репозиториев...")
+	taskRepo := repository.NewInMemoryTaskRepository()
+	userRepo := repository.NewInMemoryUserRepository()
+	fmt.Println("✅ Репозитории инициализированы")
+
+	fmt.Println("⚙️  Инициализация сервисов...")
+	taskService := service.NewTaskService(taskRepo)
+	authService := service.NewAuthService(userRepo, cfg)
+	fmt.Println("✅ Сервисы инициализированы")
+
+	fmt.Println("🔄 Инициализация хендлеров...")
+	taskHandler := handler.NewTaskHandler(taskService)
+	authHandler := handler.NewAuthHandler(authService)
+	fmt.Println("✅ Хендлеры инициализированы")
+
+	router := mux.NewRouter()
+
+	router.NotFoundHandler = http.HandlerFunc(NotFoundHandler)
+	router.MethodNotAllowedHandler = http.HandlerFunc(MethodNotAllowedHandler)
+
+	fmt.Println("🛣️ Настройка маршрутов...")
+	public := router.PathPrefix("/api/v1").Subrouter()
+
+	public.HandleFunc("/auth/register", authHandler.Register).Methods("POST", "OPTIONS")
+	public.HandleFunc("/auth/login", authHandler.Login).Methods("POST", "OPTIONS")
+
+	public.HandleFunc("/health", HealthCheck).Methods("GET")
+
+	public.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+		httpSwagger.URL("/api/v1/swagger/doc.json"),
+		httpSwagger.DeepLinking(true),
+		httpSwagger.DocExpansion("list"),
+		httpSwagger.DomID("swagger-ui"),
+		httpSwagger.UIConfig(map[string]string{
+			"defaultModelsExpandDepth": "3",
+		}),
+	))
+
+	protected := router.PathPrefix("/api/v1").Subrouter()
+	protected.Use(middleware.JWTAuthMiddleware(authService))
+
+	protected.HandleFunc("/tasks", taskHandler.GetAllTasks).Methods("GET")
+	protected.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
+	protected.HandleFunc("/tasks/{id}", taskHandler.GetTaskByID).Methods("GET")
+	protected.HandleFunc("/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
+	protected.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
+
+	swaggerURL := "/api/v1/swagger/index.html"
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, swaggerURL, http.StatusTemporaryRedirect)
+	})
+
+	router.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, swaggerURL, http.StatusPermanentRedirect)
+	})
+
+	router.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, swaggerURL, http.StatusTemporaryRedirect)
+	})
+
+	handlerChain := enableCORS(
+		RequestLogger(
+			middleware.Logger(
+				middleware.JSONContentType(
+					router,
+				),
+			),
+		),
+	)
+
+	// Настройка HTTP сервера
+	addr := fmt.Sprintf(":%d", cfg.Port)
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      handlerChain,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	fmt.Println("\n=============================================")
+	fmt.Println("🌐 Сервер запущен:")
+	fmt.Printf("   Основной URL: http://localhost:%d\n", cfg.Port)
+	fmt.Printf("   API Base URL: http://localhost:%d/api/v1\n", cfg.Port)
+	fmt.Println("\n📚 Документация:")
+	fmt.Printf("   Swagger UI: http://localhost:%d%s\n", cfg.Port, swaggerURL)
+	fmt.Printf("   OpenAPI JSON: http://localhost:%d/api/v1/swagger/doc.json\n", cfg.Port)
+	fmt.Println("\n🔐 Аутентификация:")
+	fmt.Printf("   Регистрация: POST http://localhost:%d/api/v1/auth/register\n", cfg.Port)
+	fmt.Printf("   Вход: POST http://localhost:%d/api/v1/auth/login\n", cfg.Port)
+	fmt.Println("\n📋 Примеры запросов:")
+	fmt.Println("   curl -X POST http://localhost:8080/api/v1/auth/register \\")
+	fmt.Println("     -H \"Content-Type: application/json\" \\")
+	fmt.Println("     -d '{\"username\":\"test\",\"email\":\"test@example.com\",\"password\":\"password123\"}'")
+	fmt.Println("\n   curl -X POST http://localhost:8080/api/v1/auth/login \\")
+	fmt.Println("     -H \"Content-Type: application/json\" \\")
+	fmt.Println("     -d '{\"email\":\"test@example.com\",\"password\":\"password123\"}'")
+	fmt.Println("\n   curl -X GET http://localhost:8080/api/v1/tasks \\")
+	fmt.Println("     -H \"Authorization: Bearer YOUR_JWT_TOKEN\"")
+	fmt.Println("\n=============================================")
+	fmt.Println("🛑 Для остановки нажмите Ctrl+C")
+	fmt.Println("=============================================")
+
+	// Запуск сервера
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("❌ Ошибка запуска сервера: %v", err)
+	}
 }
