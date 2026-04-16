@@ -5,53 +5,172 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/k0kubun/pp"
 )
 
+type Dish struct {
+	Name        string
+	Ingredients []string
+	Description string
+}
+
+var dishes []Dish
+
 func main() {
+	menu := `
+		1. Добавить блюдо
+		2. Посмотреть все блюда
+		3. Просмотреть блюдо
+		4. Изменить блюдо
+		5. Удалить блюдо
+		6. Выйти
+	`
+
 	for {
-		scanner := bufio.NewScanner(os.Stdin)
+		fmt.Println(menu)
+		fmt.Print("Выберите опцию: ")
+		reader := bufio.NewReader(os.Stdin)
+		option, _ := reader.ReadString('\n')
+		option = strings.TrimSpace(option)
 
-		fmt.Print("Введите команду: ")
-
-		if ok := scanner.Scan(); !ok {
-			fmt.Println("Ошибка ввода!")
+		switch option {
+		case "1":
+			addDish()
+		case "2":
+			viewAllDishes()
+		case "3":
+			viewDish()
+		case "4":
+			updateDish()
+		case "5":
+			deleteDish()
+		case "6":
 			return
-		}
-
-		text := scanner.Text()
-
-		fields := strings.Fields(text)
-		if len(fields) == 0 {
-			fmt.Println("Вы ничего не ввели!")
-			return
-		}
-
-		commands := []string{"добавить", "Добавить", "удалить", "Удалить"}
-		action := "(что, через ',')"
-		command := fields[0]
-
-		meal := []string{}
-
-		modifiedCommands := make([]string, len(commands))
-		for i, v := range commands {
-			modifiedCommands[i] = v + " " + action
-		}
-		switch command {
-		case "выйти", "Выйти", "exit":
-			fmt.Println("Гудбааай!")
-			return
-		case "добавить", "Добавить":
-			meal = fields[1:]
-			pp.Println("В блюдо добавлено:", meal)
-		case "удалить", "Удалить":
-			meal = fields[1:]
-			pp.Println("Из блюда удалено:", meal)
-		case "help":
-			pp.Println("Список доступных команд", modifiedCommands)
 		default:
-			pp.Println("Неизвестная команда, введите help для получения доступных команд")
+			fmt.Println("Неверная опция. Пожалуйста, выберите опцию из списка.")
 		}
+	}
+}
+
+func addDish() {
+	fmt.Print("Введите название блюда: ")
+	reader := bufio.NewReader(os.Stdin)
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
+
+	fmt.Print("Введите ингредиенты блюда (через запятую): ")
+	ingredients, _ := reader.ReadString('\n')
+	ingredients = strings.TrimSpace(ingredients)
+	ingredientsList := strings.Split(ingredients, ",")
+
+	fmt.Print("Введите описание блюда: ")
+	description, _ := reader.ReadString('\n')
+	description = strings.TrimSpace(description)
+
+	newDish := Dish{
+		Name:        name,
+		Ingredients: ingredientsList,
+		Description: description,
+	}
+
+	dishes = append(dishes, newDish)
+	fmt.Println("Блюдо успешно добавлен!")
+}
+
+func viewAllDishes() {
+	if len(dishes) == 0 {
+		fmt.Println("Список блюд пуст!")
+	} else {
+		fmt.Println("Блюда:")
+		for _, dish := range dishes {
+			fmt.Println("Название:", dish.Name)
+			fmt.Println("Ингредиенты:", strings.Join(dish.Ingredients, ", "))
+			fmt.Println("Описание:", dish.Description)
+
+			fmt.Println("------")
+		}
+	}
+}
+
+func viewDish() {
+	fmt.Print("Введите название блюда: ")
+	reader := bufio.NewReader(os.Stdin)
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
+
+	found := false
+	for _, dish := range dishes {
+		if dish.Name == name {
+			fmt.Println("Название:", dish.Name)
+			fmt.Println("Ингредиенты:", strings.Join(dish.Ingredients, ", "))
+			fmt.Println("Описание:", dish.Description)
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		fmt.Println("Блюдо не найдено!")
+	}
+}
+
+func updateDish() {
+	fmt.Print("Введите название блюда: ")
+	reader := bufio.NewReader(os.Stdin)
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
+
+	found := false
+	for i, dish := range dishes {
+		if dish.Name == name {
+			fmt.Print("Введите новое название блюда (или нажмите Enter, чтобы оставить название без изменений): ")
+			newName, _ := reader.ReadString('\n')
+			newName = strings.TrimSpace(newName)
+			if newName != "" {
+				dish.Name = newName
+			}
+
+			fmt.Print("Введите новые ингредиенты блюда (через запятую, или нажмите Enter, чтобы оставить ингредиенты без изменений): ")
+			newIngredients, _ := reader.ReadString('\n')
+			newIngredients = strings.TrimSpace(newIngredients)
+			newIngredientsList := strings.Split(newIngredients, ",")
+			dish.Ingredients = newIngredientsList
+
+			fmt.Print("Введите новое описание блюда (или нажмите Enter, чтобы оставить описание без изменений): ")
+			newDescription, _ := reader.ReadString('\n')
+			newDescription = strings.TrimSpace(newDescription)
+			if newDescription != "" {
+				dish.Description = newDescription
+
+				dishes[i] = dish
+				fmt.Println("Блюдо успешно обновлено!")
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			fmt.Println("Блюдо не найдено!")
+		}
+	}
+}
+
+func deleteDish() {
+	fmt.Print("Введите название блюда: ")
+	reader := bufio.NewReader(os.Stdin)
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
+
+	found := false
+	for i, dish := range dishes {
+		if dish.Name == name {
+			dishes = append(dishes[:i], dishes[i+1:]...)
+			fmt.Println("Блюдо успешно удалено!")
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		fmt.Println("Блюдо не найдено!")
 	}
 }
