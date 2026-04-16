@@ -97,7 +97,6 @@ func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request) {
 	sendError(w, http.StatusMethodNotAllowed, "Method not allowed", nil)
 }
 
-// CORS middleware для разрешения кросс-доменных запросов
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -150,10 +149,8 @@ func main() {
 	fmt.Println("🚀 Запуск Todo API с JWT аутентификацией...")
 	fmt.Println("=============================================")
 
-	// Загрузка конфигурации
 	cfg := config.Load()
 
-	// Вывод информации о конфигурации
 	fmt.Printf("📋 Конфигурация:\n")
 	fmt.Printf("Порт: %d\n", cfg.Port)
 	fmt.Printf("Окружение: %s\n", cfg.Env)
@@ -166,19 +163,16 @@ func main() {
 
 	fmt.Println("=============================================")
 
-	// Инициализация репозиториев
 	fmt.Println("📦 Инициализация репозиториев...")
 	taskRepo := repository.NewInMemoryTaskRepository()
 	userRepo := repository.NewInMemoryUserRepository()
 	fmt.Println("✅ Репозитории инициализированы")
 
-	// Инициализация сервисов
 	fmt.Println("⚙️  Инициализация сервисов...")
 	taskService := service.NewTaskService(taskRepo)
 	authService := service.NewAuthService(userRepo, cfg)
 	fmt.Println("✅ Сервисы инициализированы")
 
-	// Инициализация хендлеров
 	fmt.Println("🔄 Инициализация хендлеров...")
 	taskHandler := handler.NewTaskHandler(taskService)
 	authHandler := handler.NewAuthHandler(authService)
@@ -197,7 +191,6 @@ func main() {
 
 	public.HandleFunc("/health", HealthCheck).Methods("GET")
 
-	// Правильные пути для Swagger и doc.json
 	public.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("/api/v1/swagger/doc.json"),
 		httpSwagger.DeepLinking(true),
@@ -217,7 +210,6 @@ func main() {
 	protected.HandleFunc("/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
 	protected.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
 
-	// Редиректы ведут на полный путь к Swagger UI
 	swaggerURL := "/api/v1/swagger/index.html"
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, swaggerURL, http.StatusTemporaryRedirect)
@@ -231,7 +223,6 @@ func main() {
 		http.Redirect(w, r, swaggerURL, http.StatusTemporaryRedirect)
 	})
 
-	// Добавляем middleware
 	handlerChain := enableCORS(
 		RequestLogger(
 			middleware.Logger(

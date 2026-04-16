@@ -34,7 +34,6 @@ func Load() *Config {
     }
 }
 
-// Get возвращает глобальную конфигурацию
 func Get() *Config {
     return cfg
 }
