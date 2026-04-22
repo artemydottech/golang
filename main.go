@@ -178,10 +178,15 @@ func searchDishByIngredient() {
 	name, _ := reader.ReadString('\n')
 	name = strings.TrimSpace(name)
 
+	if len(strings.TrimSpace(name)) == 0 {
+		fmt.Println("Ингредиент не может быть пустым")
+		return
+	}
+
 	results := findDishByIngredient(name)
 
 	if len(results) == 0 {
-		fmt.Printf("Блюда с ингридиентом '%s' не найдены 'n", name)
+		fmt.Printf("Блюда с ингридиентом '%s' не найдены \n", name)
 	} else {
 		fmt.Printf("Блюда с ингридиентом '%s':\n", name)
 		for _, dish := range results {
