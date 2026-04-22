@@ -22,7 +22,8 @@ func main() {
 		3. Просмотреть блюдо
 		4. Изменить блюдо
 		5. Удалить блюдо
-		6. Выйти
+		6. Поиск блюдка по ингридиенту
+		7. Выйти
 	`
 
 	for {
@@ -44,6 +45,8 @@ func main() {
 		case "5":
 			deleteDish()
 		case "6":
+			searchDishByIngredient()
+		case "7":
 			return
 		default:
 			fmt.Println("Неверная опция. Пожалуйста, выберите опцию из списка.")
@@ -147,9 +150,45 @@ func updateDish() {
 				break
 			}
 		}
+	}
 
-		if !found {
-			fmt.Println("Блюдо не найдено!")
+	if !found {
+		fmt.Println("Блюдо не найдено!")
+	}
+}
+
+func findDishByIngredient(ingredient string) []Dish {
+	foundDishes := make([]Dish, 0)
+
+	for _, dish := range dishes {
+		for _, ing := range dish.Ingredients {
+			if strings.EqualFold(ing, ingredient) {
+				foundDishes = append(foundDishes, dish)
+				break
+			}
+		}
+	}
+
+	return foundDishes
+}
+
+func searchDishByIngredient() {
+	fmt.Println("Введите название ингридиента: ")
+	reader := bufio.NewReader(os.Stdin)
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
+
+	results := findDishByIngredient(name)
+
+	if len(results) == 0 {
+		fmt.Printf("Блюда с ингридиентом '%s' не найдены 'n", name)
+	} else {
+		fmt.Printf("Блюда с ингридиентом '%s':\n", name)
+		for _, dish := range results {
+			fmt.Println("Название:", dish.Name)
+			fmt.Println("Ингредиенты:", strings.Join(dish.Ingredients, ", "))
+			fmt.Println("Описание:", dish.Description)
+			fmt.Println("------")
 		}
 	}
 }
