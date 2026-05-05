@@ -2,10 +2,10 @@
     "swagger": "2.0",
     "info": {
         "description": "REST API for task management with JWT authentication",
-        "title": "Taneellaa API with JWT Authentication",
+        "title": "artemydottech API with JWT Authentication",
         "contact": {
             "name": "Artemij Zverev",
-            "url": "https://github.com/Taneellaa",
+            "url": "https://github.com/artemydottech",
             "email": "artemiy.zverev@bk.ru"
         },
         "license": {

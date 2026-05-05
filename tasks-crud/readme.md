@@ -5,7 +5,7 @@
 ## Установка
 
 1. Установите Go версии 1.16 или выше.
-2. Клонируйте репозиторий: `git clone https://github.com/Taneellaa/tasks-crud.git`
+2. Клонируйте репозиторий: `git clone https://github.com/artemydottech/tasks-crud.git`
 3. Перейдите в каталог проекта: `cd tasks-crud`
 4. Установите зависимости: `go mod download`
 

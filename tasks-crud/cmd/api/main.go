@@ -25,7 +25,7 @@ import (
 // @description REST API for task management with JWT authentication
 
 // @contact.name Artemij Zverev
-// @contact.url https://github.com/Taneellaa
+// @contact.url https://github.com/artemydottech
 // @contact.email artemiy.zverev@bk.ru
 
 // @license.name MIT

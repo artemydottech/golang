@@ -101,12 +101,12 @@ info:
   contact:
     email: artemiy.zverev@bk.ru
     name: Artemij Zverev
-    url: https://github.com/Taneellaa
+    url: https://github.com/artemydottech
   description: REST API for task management with JWT authentication
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
-  title: Taneellaa API with JWT Authentication
+  title: artemydottech API with JWT Authentication
   version: 1.0.0
 paths:
   /auth/login:
