@@ -11,7 +11,7 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "contact": {
             "name": "Artemij Zverev",
-            "url": "https://github.com/Taneellaa",
+            "url": "https://github.com/artemydottech",
             "email": "artemiy.zverev@bk.ru"
         },
         "license": {
@@ -471,7 +471,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Taneellaa API with JWT Authentication",
+	Title:            "artemydottech API with JWT Authentication",
 	Description:      "REST API for task management with JWT authentication",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
