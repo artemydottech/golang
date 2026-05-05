@@ -1,6 +1,8 @@
 package greeting
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func SayHello() {
 	fmt.Println("This is a greeting module, hello world!")
