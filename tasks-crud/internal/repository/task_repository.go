@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -53,6 +54,7 @@ func (r *InMemoryTaskRepository) GetAll() ([]domain.Task, error) {
     for _, task := range r.tasks {
         taskList = append(taskList, task)
     }
+    sort.Slice(taskList, func(i, j int) bool { return taskList[i].ID < taskList[j].ID })
     
     return taskList, nil
 }

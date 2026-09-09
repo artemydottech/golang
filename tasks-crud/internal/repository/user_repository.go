@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -116,6 +117,7 @@ func (r *InMemoryUserRepository) GetAll() ([]domain.User, error) {
     for _, user := range r.users {
         users = append(users, user)
     }
+    sort.Slice(users, func(i, j int) bool { return users[i].ID < users[j].ID })
 
     return users, nil
 }
