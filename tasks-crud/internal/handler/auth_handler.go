@@ -36,12 +36,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
     }
     defer r.Body.Close()
     
-    // Базовая валидация
-    if len(req.Password) < 8 {
-        sendError(w, http.StatusBadRequest, "Password must be at least 8 characters", nil)
-        return
-    }
-    
     // Регистрация пользователя
     user, err := h.authService.Register(req)
     if err != nil {

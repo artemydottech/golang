@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -46,7 +48,33 @@ func (s *AuthService) VerifyPassword(hashedPassword, password string) bool {
     return err == nil
 }
 
+var emailPattern = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+
+func validateCreateUserRequest(req domain.CreateUserRequest) error {
+    username := strings.TrimSpace(req.Username)
+    if len(username) < 3 || len(username) > 50 {
+        return errors.New("username must be between 3 and 50 characters")
+    }
+
+    if !emailPattern.MatchString(strings.TrimSpace(req.Email)) {
+        return errors.New("email is not a valid address")
+    }
+
+    if len(req.Password) < 8 {
+        return errors.New("password must be at least 8 characters")
+    }
+
+    return nil
+}
+
 func (s *AuthService) Register(req domain.CreateUserRequest) (*domain.User, error) {
+    if err := validateCreateUserRequest(req); err != nil {
+        return nil, err
+    }
+
+    req.Username = strings.TrimSpace(req.Username)
+    req.Email = strings.TrimSpace(req.Email)
+
     existingUser, err := s.userRepo.GetByEmail(req.Email)
     if err == nil && existingUser != nil {
         return nil, errors.New("user with this email already exists")
