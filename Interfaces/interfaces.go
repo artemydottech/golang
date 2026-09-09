@@ -1,5 +1,1 @@
 package interfaces
-
-func main() {
-
-}
