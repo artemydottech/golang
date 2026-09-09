@@ -29,17 +29,20 @@ func NewInMemoryTaskRepository() *InMemoryTaskRepository {
         currentID: 1,
     }
     
+    seededAt := time.Now()
     repo.tasks[1] = domain.Task{
         ID:        1,
         Title:     "Выучить основы Go",
         Completed: false,
-        CreatedAt: time.Now(),
+        CreatedAt: seededAt,
+        UpdatedAt: seededAt,
     }
     repo.tasks[2] = domain.Task{
         ID:        2,
         Title:     "Написать первое API",
         Completed: true,
-        CreatedAt: time.Now(),
+        CreatedAt: seededAt,
+        UpdatedAt: seededAt,
     }
     repo.currentID = 3 
     
@@ -75,8 +78,10 @@ func (r *InMemoryTaskRepository) Create(task *domain.Task) error {
     r.mu.Lock()         
     defer r.mu.Unlock()
     
+    now := time.Now()
     task.ID = r.currentID
-    task.CreatedAt = time.Now()
+    task.CreatedAt = now
+    task.UpdatedAt = now
     
     r.tasks[r.currentID] = *task
     

@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"tasks-crud/internal/domain"
 	"tasks-crud/internal/repository"
@@ -88,6 +89,8 @@ func (s *TaskService) UpdateTask(id int, req domain.UpdateTaskRequest) (*domain.
     if req.Completed != nil {
         updatedTask.Completed = *req.Completed
     }
+    
+    updatedTask.UpdatedAt = time.Now()
     
     if err := s.repo.Update(id, &updatedTask); err != nil {
         return nil, fmt.Errorf("failed to update task: %w", err)
