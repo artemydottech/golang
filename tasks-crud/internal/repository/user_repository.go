@@ -39,7 +39,7 @@ func NewInMemoryUserRepository() *InMemoryUserRepository {
         ID:           1,
         Username:     "admin",
         Email:        "admin@example.com",
-        PasswordHash: "$2a$12$N9qo8uLOickgx2ZMRZoMyeMRZDzX4fLmHwQc6UimjX8cK7s2p6qVy", // password: admin123
+        PasswordHash: "$2a$12$QwmrjaKOcf/tdZhjOVAb2OFBvwJ/8LTTjI2QO.QNlmkD.RKMS9KTa", // password: admin123
         CreatedAt:    time.Now(),
     }
     
