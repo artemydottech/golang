@@ -112,39 +112,6 @@ func enableCORS(next http.Handler) http.Handler {
 	})
 }
 
-// RequestLogger middleware для логирования запросов
-func RequestLogger(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		// Создаем обертку для ResponseWriter чтобы перехватить статус код
-		rw := &responseWriter{w, http.StatusOK}
-
-		next.ServeHTTP(rw, r)
-
-		duration := time.Since(start)
-
-		log.Printf("[%s] %s %s %d %v",
-			r.Method,
-			r.URL.Path,
-			r.RemoteAddr,
-			rw.statusCode,
-			duration,
-		)
-	})
-}
-
-// responseWriter кастомный ResponseWriter для перехвата статус кода
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}
-
 func main() {
 	fmt.Println("🚀 Запуск Todo API с JWT аутентификацией...")
 	fmt.Println("=============================================")
@@ -224,11 +191,9 @@ func main() {
 	})
 
 	handlerChain := enableCORS(
-		RequestLogger(
-			middleware.Logger(
-				middleware.JSONContentType(
-					router,
-				),
+		middleware.Logger(
+			middleware.JSONContentType(
+				router,
 			),
 		),
 	)
