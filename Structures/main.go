@@ -19,13 +19,13 @@ type User struct {
 	Rating float64
 }
 
-func (u *User) ChangeName (newName string) {
+func (u *User) ChangeName(newName string) {
 	if newName != "" && newName != u.Name {
 		u.Name = newName
 	}
 }
 
-func (u *User) ChangeAge (newAge int){
+func (u *User) ChangeAge(newAge int) {
 	if newAge >= 0 && newAge <= 120 && newAge != u.Age {
 		u.Age = newAge
 		fmt.Println("Поменяли возраст, теперь он", u.Age)
@@ -42,15 +42,15 @@ func NewUser(name string, age int, phoneNumber string, isProfileClosed bool, rat
 	}
 
 	return User{
-		Name: name,
-		Age: age,
-		PhoneNumber: phoneNumber,
+		Name:            name,
+		Age:             age,
+		PhoneNumber:     phoneNumber,
 		IsProfileClosed: isProfileClosed,
-		Rating: rating,
+		Rating:          rating,
 	}
 }
 
-func main(){
+func main() {
 	user := NewUser(
 		"Антоха",
 		135,

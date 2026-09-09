@@ -9,11 +9,11 @@ import (
 )
 
 type AuthHandler struct {
-    authService *service.AuthService
+	authService *service.AuthService
 }
 
 func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-    return &AuthHandler{authService: authService}
+	return &AuthHandler{authService: authService}
 }
 
 // Register - регистрация нового пользователя
@@ -28,38 +28,38 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 // @Failure 409 {object} domain.ErrorResponse
 // @Router /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-    var req domain.CreateUserRequest
-    
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        sendError(w, http.StatusBadRequest, "Invalid JSON", err)
-        return
-    }
-    defer r.Body.Close()
-    
-    // Регистрация пользователя
-    user, err := h.authService.Register(req)
-    if err != nil {
-        status := http.StatusBadRequest
-        if err.Error() == "user with this email already exists" {
-            status = http.StatusConflict
-        }
-        sendError(w, status, "Registration failed", err)
-        return
-    }
-    
-    // Генерация токена
-    token, err := h.authService.GenerateToken(user)
-    if err != nil {
-        sendError(w, http.StatusInternalServerError, "Failed to generate token", err)
-        return
-    }
-    
-    response := domain.AuthResponse{
-        Token: token,
-        User:  *user,
-    }
-    
-    sendJSON(w, http.StatusCreated, response)
+	var req domain.CreateUserRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		sendError(w, http.StatusBadRequest, "Invalid JSON", err)
+		return
+	}
+	defer r.Body.Close()
+
+	// Регистрация пользователя
+	user, err := h.authService.Register(req)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err.Error() == "user with this email already exists" {
+			status = http.StatusConflict
+		}
+		sendError(w, status, "Registration failed", err)
+		return
+	}
+
+	// Генерация токена
+	token, err := h.authService.GenerateToken(user)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "Failed to generate token", err)
+		return
+	}
+
+	response := domain.AuthResponse{
+		Token: token,
+		User:  *user,
+	}
+
+	sendJSON(w, http.StatusCreated, response)
 }
 
 // Login - вход пользователя
@@ -74,33 +74,33 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} domain.ErrorResponse
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-    var req domain.LoginRequest
-    
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        sendError(w, http.StatusBadRequest, "Invalid JSON", err)
-        return
-    }
-    defer r.Body.Close()
-    
-    // Аутентификация
-    user, err := h.authService.Login(req)
-    if err != nil {
-        // Для безопасности даем одинаковую ошибку
-        sendError(w, http.StatusUnauthorized, "Invalid email or password", nil)
-        return
-    }
-    
-    // Генерация токена
-    token, err := h.authService.GenerateToken(user)
-    if err != nil {
-        sendError(w, http.StatusInternalServerError, "Failed to generate token", err)
-        return
-    }
-    
-    response := domain.AuthResponse{
-        Token: token,
-        User:  *user,
-    }
-    
-    sendJSON(w, http.StatusOK, response)
+	var req domain.LoginRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		sendError(w, http.StatusBadRequest, "Invalid JSON", err)
+		return
+	}
+	defer r.Body.Close()
+
+	// Аутентификация
+	user, err := h.authService.Login(req)
+	if err != nil {
+		// Для безопасности даем одинаковую ошибку
+		sendError(w, http.StatusUnauthorized, "Invalid email or password", nil)
+		return
+	}
+
+	// Генерация токена
+	token, err := h.authService.GenerateToken(user)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "Failed to generate token", err)
+		return
+	}
+
+	response := domain.AuthResponse{
+		Token: token,
+		User:  *user,
+	}
+
+	sendJSON(w, http.StatusOK, response)
 }

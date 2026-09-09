@@ -17,140 +17,140 @@ import (
 )
 
 type Claims struct {
-    UserID   int    `json:"user_id"`
-    Username string `json:"username"`
-    Email    string `json:"email"`
-    jwt.RegisteredClaims
+	UserID   int    `json:"user_id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	jwt.RegisteredClaims
 }
 
 type AuthService struct {
-    userRepo repository.UserRepository
-    cfg      *config.Config
+	userRepo repository.UserRepository
+	cfg      *config.Config
 }
 
 func NewAuthService(userRepo repository.UserRepository, cfg *config.Config) *AuthService {
-    return &AuthService{
-        userRepo: userRepo,
-        cfg:      cfg,
-    }
+	return &AuthService{
+		userRepo: userRepo,
+		cfg:      cfg,
+	}
 }
 
 func (s *AuthService) HashPassword(password string) (string, error) {
-    hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), s.cfg.BcryptCost)
-    if err != nil {
-        return "", fmt.Errorf("failed to hash password: %w", err)
-    }
-    return string(hashedBytes), nil
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), s.cfg.BcryptCost)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+	return string(hashedBytes), nil
 }
 
 func (s *AuthService) VerifyPassword(hashedPassword, password string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-    return err == nil
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return err == nil
 }
 
 var emailPattern = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 
 func validateCreateUserRequest(req domain.CreateUserRequest) error {
-    username := strings.TrimSpace(req.Username)
-    if len(username) < 3 || len(username) > 50 {
-        return errors.New("username must be between 3 and 50 characters")
-    }
+	username := strings.TrimSpace(req.Username)
+	if len(username) < 3 || len(username) > 50 {
+		return errors.New("username must be between 3 and 50 characters")
+	}
 
-    if !emailPattern.MatchString(strings.TrimSpace(req.Email)) {
-        return errors.New("email is not a valid address")
-    }
+	if !emailPattern.MatchString(strings.TrimSpace(req.Email)) {
+		return errors.New("email is not a valid address")
+	}
 
-    if len(req.Password) < 8 {
-        return errors.New("password must be at least 8 characters")
-    }
+	if len(req.Password) < 8 {
+		return errors.New("password must be at least 8 characters")
+	}
 
-    return nil
+	return nil
 }
 
 func (s *AuthService) Register(req domain.CreateUserRequest) (*domain.User, error) {
-    if err := validateCreateUserRequest(req); err != nil {
-        return nil, err
-    }
+	if err := validateCreateUserRequest(req); err != nil {
+		return nil, err
+	}
 
-    req.Username = strings.TrimSpace(req.Username)
-    req.Email = strings.TrimSpace(req.Email)
+	req.Username = strings.TrimSpace(req.Username)
+	req.Email = strings.TrimSpace(req.Email)
 
-    existingUser, err := s.userRepo.GetByEmail(req.Email)
-    if err == nil && existingUser != nil {
-        return nil, errors.New("user with this email already exists")
-    }
-    
-    hashedPassword, err := s.HashPassword(req.Password)
-    if err != nil {
-        return nil, fmt.Errorf("failed to hash password: %w", err)
-    }
-    
-    user := &domain.User{
-        Username:     req.Username,
-        Email:        req.Email,
-        PasswordHash: hashedPassword,
-        CreatedAt:    time.Now(),
-    }
-    
-    if err := s.userRepo.Create(user); err != nil {
-        return nil, fmt.Errorf("failed to create user: %w", err)
-    }
-    
-    return user, nil
+	existingUser, err := s.userRepo.GetByEmail(req.Email)
+	if err == nil && existingUser != nil {
+		return nil, errors.New("user with this email already exists")
+	}
+
+	hashedPassword, err := s.HashPassword(req.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	user := &domain.User{
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: hashedPassword,
+		CreatedAt:    time.Now(),
+	}
+
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return user, nil
 }
 
 func (s *AuthService) Login(req domain.LoginRequest) (*domain.User, error) {
-    user, err := s.userRepo.GetByEmail(req.Email)
-    if err != nil {
-        return nil, errors.New("invalid credentials")
-    }
-    
-    if !s.VerifyPassword(user.PasswordHash, req.Password) {
-        return nil, errors.New("invalid credentials")
-    }
-    
-    return user, nil
+	user, err := s.userRepo.GetByEmail(req.Email)
+	if err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	if !s.VerifyPassword(user.PasswordHash, req.Password) {
+		return nil, errors.New("invalid credentials")
+	}
+
+	return user, nil
 }
 
 func (s *AuthService) GenerateToken(user *domain.User) (string, error) {
-    claims := Claims{
-        UserID:   user.ID,
-        Username: user.Username,
-        Email:    user.Email,
-        RegisteredClaims: jwt.RegisteredClaims{
-            ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.JWTExpiry)),
-            IssuedAt:  jwt.NewNumericDate(time.Now()),
-            NotBefore: jwt.NewNumericDate(time.Now()),
-            Issuer:    "todo-api",
-            Subject:   strconv.Itoa(user.ID),
-        },
-    }
-    
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    
-    tokenString, err := token.SignedString([]byte(s.cfg.JWTSecret))
-    if err != nil {
-        return "", fmt.Errorf("failed to sign token: %w", err)
-    }
-    
-    return tokenString, nil
+	claims := Claims{
+		UserID:   user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.JWTExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Issuer:    "todo-api",
+			Subject:   strconv.Itoa(user.ID),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString([]byte(s.cfg.JWTSecret))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign token: %w", err)
+	}
+
+	return tokenString, nil
 }
 
 func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
-    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-        if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-        }
-        return []byte(s.cfg.JWTSecret), nil
-    })
-    
-    if err != nil {
-        return nil, fmt.Errorf("invalid token: %w", err)
-    }
-    
-    if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-        return claims, nil
-    }
-    
-    return nil, errors.New("invalid token claims")
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(s.cfg.JWTSecret), nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid token: %w", err)
+	}
+
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, errors.New("invalid token claims")
 }

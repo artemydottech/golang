@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-func main(){
+func main() {
 	//name := "Васечка"
 	//fmt.Println("До изменения:", name)
 
@@ -15,8 +15,7 @@ func main(){
 	fmt.Println("number:", number)
 
 	var ptr *int = &number
-		fmt.Println("ptr:", ptr)
-
+	fmt.Println("ptr:", ptr)
 
 	//if ptr != nil {
 	//	fmt.Println("Разыменование:", *ptr)
@@ -24,4 +23,3 @@ func main(){
 	//	fmt.Println("Получен nil-указатель")
 	//}
 }
-
